@@ -404,6 +404,67 @@ async function run() {
     );
 
 
+    // -------- MODERATOR: ADD / UPDATE FEEDBACK --------
+    app.patch(
+      "/applications/:id",
+      verifyJWT,
+      verifyModerator,
+      async (req, res) => {
+        const { feedback } = req.body;
+
+        if (!feedback || feedback.trim() === "") {
+          return res.status(400).send({ message: "Feedback is required" });
+        }
+
+        const result = await applicationsCollection.updateOne(
+          { _id: new ObjectId(req.params.id) },
+          {
+            $set: {
+              feedback: feedback,
+            },
+          }
+        );
+
+        res.send(result);
+      }
+    );
+
+
+    // -------- MODERATOR: GET ALL REVIEWS --------
+    app.get(
+      "/reviews/admin/all",
+      verifyJWT,
+      verifyModerator,
+      async (req, res) => {
+        const reviews = await reviewsCollection.find().toArray();
+        res.send(reviews);
+      }
+    );
+
+
+    // -------- MODERATOR: DELETE ANY REVIEW --------
+    app.delete(
+      "/reviews/moderator/:id",
+      verifyJWT,
+      verifyModerator,
+      async (req, res) => {
+        const review = await reviewsCollection.findOne({
+          _id: new ObjectId(req.params.id),
+        });
+
+        if (!review) {
+          return res.status(404).send({ message: "Review not found" });
+        }
+
+        await reviewsCollection.deleteOne({
+          _id: new ObjectId(req.params.id),
+        });
+
+        res.send({ success: true });
+      }
+    );
+
+
 
 
 
