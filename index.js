@@ -231,6 +231,18 @@ async function run() {
       );
     });
 
+    app.delete("/scholarships/:id", verifyJWT, verifyAdmin, async (req, res) => {
+      res.send(
+        await scholarshipsCollection.deleteOne({ _id: new ObjectId(req.params.id) })
+      );
+    });
+
+    app.get("/scholarships/admin/all", verifyJWT, verifyAdmin, async (req, res) => {
+      const data = await scholarshipsCollection.find().toArray();
+      res.send(data);
+    });
+
+
 
 
 
