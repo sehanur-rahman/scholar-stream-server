@@ -367,6 +367,43 @@ async function run() {
     );
 
 
+    // --------MODERATOR Status Flow --------
+    app.patch(
+      "/applications/status/:id",
+      verifyJWT,
+      verifyModerator,
+      async (req, res) => {
+        const { status } = req.body;
+        const allowed = ["pending", "processing", "completed", "rejected"];
+
+        if (!allowed.includes(status)) {
+          return res.status(400).send({ message: "Invalid status" });
+        }
+
+        const _id = new ObjectId(req.params.id);
+
+        const appData = await applicationsCollection.findOne({ _id });
+
+        if (!appData) {
+          return res.status(404).send({ message: "Application not found" });
+        }
+
+        if (appData.paymentStatus !== "paid" && status !== "rejected") {
+          return res
+            .status(403)
+            .send({ message: "Unpaid application cannot be processed" });
+        }
+
+        const result = await applicationsCollection.updateOne(
+          { _id },
+          { $set: { applicationStatus: status } }
+        );
+
+        res.send(result);
+      }
+    );
+
+
 
 
 
