@@ -334,6 +334,39 @@ async function run() {
     );
 
 
+    app.delete(
+      "/applications/:id",
+      verifyJWT,
+      async (req, res) => {
+        const id = req.params.id;
+
+        const application = await applicationsCollection.findOne({
+          _id: new ObjectId(id),
+        });
+
+        if (!application) {
+          return res.status(404).send({ message: "Application not found" });
+        }
+
+        if (application.userEmail !== req.decoded.email) {
+          return res.status(403).send({ message: "Forbidden" });
+        }
+
+        if (application.applicationStatus !== "pending") {
+          return res.status(400).send({
+            message: "Only pending applications can be deleted",
+          });
+        }
+
+        await applicationsCollection.deleteOne({
+          _id: new ObjectId(id),
+        });
+
+        res.send({ success: true });
+      }
+    );
+
+
 
 
 
