@@ -521,6 +521,33 @@ async function run() {
     );
 
 
+    // -------- STUDENT: DELETE REVIEW --------
+    app.delete(
+      "/reviews/:id",
+      verifyJWT,
+      async (req, res) => {
+        const review = await reviewsCollection.findOne({
+          _id: new ObjectId(req.params.id),
+        });
+
+        if (!review) {
+          return res.status(404).send({ message: "Review not found" });
+        }
+
+        // Only owner can delete
+        if (review.userEmail !== req.decoded.email) {
+          return res.status(403).send({ message: "Forbidden" });
+        }
+
+        await reviewsCollection.deleteOne({
+          _id: new ObjectId(req.params.id),
+        });
+
+        res.send({ success: true });
+      }
+    );
+
+
 
 
 
