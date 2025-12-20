@@ -164,7 +164,7 @@ async function run() {
       }
     });
 
-    
+
     // ---------------- Scholarships ----------------
     app.get("/scholarships", async (req, res) => {
       let {
@@ -215,6 +215,19 @@ async function run() {
     app.get("/scholarships/:id", async (req, res) => {
       res.send(
         await scholarshipsCollection.findOne({ _id: new ObjectId(req.params.id) })
+      );
+    });
+
+    app.post("/scholarships", verifyJWT, verifyAdmin, async (req, res) => {
+      res.send(await scholarshipsCollection.insertOne(req.body));
+    });
+
+    app.patch("/scholarships/:id", verifyJWT, verifyAdmin, async (req, res) => {
+      res.send(
+        await scholarshipsCollection.updateOne(
+          { _id: new ObjectId(req.params.id) },
+          { $set: req.body }
+        )
       );
     });
 
