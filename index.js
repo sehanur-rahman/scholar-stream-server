@@ -297,6 +297,43 @@ async function run() {
     });
 
 
+    app.get("/applications", verifyJWT, verifyModerator, async (req, res) => {
+      res.send(await applicationsCollection.find().toArray());
+    });
+
+
+    app.patch(
+      "/applications/pay/:id",
+      verifyJWT,
+      async (req, res) => {
+        const _id = new ObjectId(req.params.id);
+
+        const appData = await applicationsCollection.findOne({ _id });
+
+        if (!appData) {
+          return res.status(404).send({ message: "Application not found" });
+        }
+
+        if (appData.paymentStatus === "paid") {
+          return res
+            .status(400)
+            .send({ message: "Application already paid" });
+        }
+
+        const result = await applicationsCollection.updateOne(
+          { _id },
+          {
+            $set: {
+              paymentStatus: "paid",
+            },
+          }
+        );
+
+        res.send(result);
+      }
+    );
+
+
 
 
 
