@@ -548,6 +548,67 @@ async function run() {
     );
 
 
+    // ---------------- Admin Analytics ----------------
+    app.get("/admin-stats", verifyJWT, verifyAdmin, async (req, res) => {
+      const users = await usersCollection.estimatedDocumentCount();
+      const scholarships = await scholarshipsCollection.estimatedDocumentCount();
+
+      const totalFees = await applicationsCollection
+        .aggregate([
+          { $match: { paymentStatus: "paid" } },
+          {
+            $group: {
+              _id: null,
+              total: {
+                $sum: {
+                  $add: [
+                    { $ifNull: [{ $toDouble: "$applicationFees" }, 0] },
+                    { $ifNull: [{ $toDouble: "$serviceCharge" }, 0] },
+                  ],
+                },
+              },
+            },
+          },
+        ])
+        .toArray();
+
+      res.send({
+        users,
+        scholarships,
+        totalFees: totalFees[0]?.total || 0,
+      });
+    });
+
+
+    // -------- ADMIN ANALYTICS: APPLICATION COUNT --------
+    app.get(
+      "/admin-application-stats",
+      verifyJWT,
+      verifyAdmin,
+      async (req, res) => {
+        const groupBy = req.query.by || "university";
+
+        let groupStage = {};
+
+        if (groupBy === "category") {
+          groupStage = { $group: { _id: "$scholarshipCategory", count: { $sum: 1 } } };
+        } else {
+          groupStage = { $group: { _id: "$universityName", count: { $sum: 1 } } };
+        }
+
+        const result = await applicationsCollection
+          .aggregate([
+            { $match: { paymentStatus: "paid" } },
+            groupStage,
+            { $sort: { count: -1 } },
+          ])
+          .toArray();
+
+        res.send(result);
+      }
+    );
+
+
 
 
 
