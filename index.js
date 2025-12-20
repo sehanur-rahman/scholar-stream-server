@@ -465,6 +465,62 @@ async function run() {
     );
 
 
+    // ---------------- Reviews ----------------
+    app.post("/reviews", verifyJWT, async (req, res) => {
+      const applied = await applicationsCollection.findOne({
+        userEmail: req.decoded.email,
+        scholarshipId: req.body.scholarshipId,
+        applicationStatus: "completed",
+      });
+      if (!applied)
+        return res.status(403).send({ message: "Application not completed" });
+
+      req.body.reviewDate = new Date();
+      res.send(await reviewsCollection.insertOne(req.body));
+    });
+
+    app.get("/reviews/:scholarshipId", async (req, res) => {
+      res.send(
+        await reviewsCollection
+          .find({ scholarshipId: req.params.scholarshipId })
+          .toArray()
+      );
+    });
+
+    // -------- STUDENT: UPDATE REVIEW --------
+    app.patch(
+      "/reviews/:id",
+      verifyJWT,
+      async (req, res) => {
+        const { ratingPoint, reviewComment } = req.body;
+
+        const review = await reviewsCollection.findOne({
+          _id: new ObjectId(req.params.id),
+        });
+
+        if (!review) {
+          return res.status(404).send({ message: "Review not found" });
+        }
+
+        if (review.userEmail !== req.decoded.email) {
+          return res.status(403).send({ message: "Forbidden" });
+        }
+
+        const result = await reviewsCollection.updateOne(
+          { _id: new ObjectId(req.params.id) },
+          {
+            $set: {
+              ratingPoint,
+              reviewComment,
+            },
+          }
+        );
+
+        res.send(result);
+      }
+    );
+
+
 
 
 
