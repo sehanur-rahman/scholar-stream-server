@@ -608,9 +608,25 @@ async function run() {
       }
     );
 
+    // ---------------- Stripe ----------------
+    app.post("/create-payment-intent", async (req, res) => {
+      const scholarship = await scholarshipsCollection.findOne({
+        _id: new ObjectId(req.body.scholarshipId),
+      });
+      if (!scholarship)
+        return res.status(404).send({ message: "Scholarship not found" });
 
+      const fee = Number(scholarship.applicationFees);
+      if (!fee || fee <= 0)
+        return res.status(400).send({ message: "Invalid application fee" });
 
+      const intent = await stripe.paymentIntents.create({
+        amount: fee * 100,
+        currency: "usd",
+      });
 
+      res.send({ clientSecret: intent.client_secret });
+    });
 
   } catch (err) {
     console.error(err);
