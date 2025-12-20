@@ -164,6 +164,62 @@ async function run() {
       }
     });
 
+    
+    // ---------------- Scholarships ----------------
+    app.get("/scholarships", async (req, res) => {
+      let {
+        search = "",
+        category = "",
+        subject = "",
+        country = "",
+        degree = "",
+        sort = "",
+        page = 1,
+        limit = 10,
+      } = req.query;
+
+      page = parseInt(page);
+      limit = parseInt(limit);
+
+      const query = {};
+      if (search) {
+        query.$or = [
+          { scholarshipName: { $regex: search, $options: "i" } },
+          { universityName: { $regex: search, $options: "i" } },
+          { degree: { $regex: search, $options: "i" } },
+        ];
+      }
+      if (category) query.scholarshipCategory = category;
+      if (subject) query.subjectCategory = subject;
+      if (country) query.universityCountry = country;
+      if (degree) query.degree = degree;
+
+
+      let sortOption = {};
+      if (sort === "fees-asc") sortOption.applicationFees = 1;
+      if (sort === "fees-desc") sortOption.applicationFees = -1;
+      if (sort === "newest") sortOption.scholarshipPostDate = -1;
+      if (sort === "oldest") sortOption.scholarshipPostDate = 1;
+
+      const total = await scholarshipsCollection.countDocuments(query);
+      const data = await scholarshipsCollection
+        .find(query)
+        .sort(sortOption)
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .toArray();
+
+      res.send({ total, page, limit, totalPages: Math.ceil(total / limit), data });
+    });
+
+    app.get("/scholarships/:id", async (req, res) => {
+      res.send(
+        await scholarshipsCollection.findOne({ _id: new ObjectId(req.params.id) })
+      );
+    });
+
+
+
 
   } catch (err) {
     console.error(err);
