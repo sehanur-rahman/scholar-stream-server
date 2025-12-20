@@ -243,6 +243,60 @@ async function run() {
     });
 
 
+    // ---------------- Applications ----------------
+    app.post("/applications", verifyJWT, async (req, res) => {
+      const exists = await applicationsCollection.findOne({
+        scholarshipId: req.body.scholarshipId,
+        userEmail: req.decoded.email,
+      });
+
+      if (exists) {
+        return res.status(409).send({
+          message: "Application already exists"
+        });
+      }
+
+      const user = await usersCollection.findOne({
+        email: req.decoded.email,
+      });
+
+      const application = {
+        ...req.body,
+        userName: user?.name || "Unknown",
+        userEmail: req.decoded.email,
+        applicationStatus: "pending",
+        paymentStatus: req.body.paymentStatus,
+        applicationDate: new Date(),
+      };
+
+      const result = await applicationsCollection.insertOne(application);
+      res.send(result);
+    });
+
+
+    app.get(
+      "/applications/check/:scholarshipId",
+      verifyJWT,
+      async (req, res) => {
+        const exists = await applicationsCollection.findOne({
+          scholarshipId: req.params.scholarshipId,
+          userEmail: req.decoded.email,
+        });
+
+        res.send({ applied: !!exists });
+      }
+    );
+
+
+    app.get("/applications/me", verifyJWT, async (req, res) => {
+      res.send(
+        await applicationsCollection
+          .find({ userEmail: req.decoded.email })
+          .toArray()
+      );
+    });
+
+
 
 
 
