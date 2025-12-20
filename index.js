@@ -103,7 +103,68 @@ async function run() {
       res.send({ token });
     });
 
-    
+    // ---------------- Users ----------------
+    app.post("/users", async (req, res) => {
+      const exists = await usersCollection.findOne({ email: req.body.email });
+      if (exists) return res.send({ message: "User exists" });
+
+      req.body.role = "Student";
+      res.send(await usersCollection.insertOne(req.body));
+    });
+
+    app.get("/users", verifyJWT, verifyAdmin, async (req, res) => {
+      res.send(await usersCollection.find().toArray());
+    });
+
+
+    app.get("/users/:email", verifyJWT, async (req, res) => {
+      if (req.params.email !== req.decoded.email)
+        return res.status(403).send({ message: "Forbidden" });
+
+      const user = await usersCollection.findOne({ email: req.params.email });
+      res.send(user);
+    });
+
+
+    app.patch("/users/role/:id", verifyJWT, verifyAdmin, async (req, res) => {
+      res.send(
+        await usersCollection.updateOne(
+          { _id: new ObjectId(req.params.id) },
+          { $set: { role: req.body.role } }
+        )
+      );
+    });
+
+    app.delete("/users/:id", verifyJWT, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+
+      const user = await usersCollection.findOne({ _id: new ObjectId(id) });
+
+      if (!user) {
+        return res.status(404).send({ message: "User not found" });
+      }
+
+      // Prevent admin deleting himself
+      if (user.email === req.decoded.email) {
+        return res.status(400).send({ message: "You cannot delete yourself" });
+      }
+
+      try {
+        // Delete from Firebase Auth
+        const firebaseUser = await admin.auth().getUserByEmail(user.email);
+        await admin.auth().deleteUser(firebaseUser.uid);
+
+        // Delete from MongoDB
+        await usersCollection.deleteOne({ _id: new ObjectId(id) });
+
+        res.send({ success: true });
+      } catch (error) {
+        console.error(error);
+        res.status(500).send({ message: "Failed to delete user" });
+      }
+    });
+
+
   } catch (err) {
     console.error(err);
   }
