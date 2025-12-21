@@ -28,7 +28,7 @@ const port = process.env.PORT || 5000;
 // ---------------- Middleware ----------------
 app.use(
   cors({
-    origin: [ process.env.CLIENT_ORIGIN , "http://localhost:5173" ],
+    origin: [process.env.CLIENT_ORIGIN, "http://localhost:5173"],
     credentials: true,
   })
 );
@@ -128,9 +128,6 @@ async function run() {
 
 
     app.get("/users/:email", verifyJWT, async (req, res) => {
-      if (req.params.email !== req.decoded.email)
-        return res.status(403).send({ message: "Forbidden" });
-
       const user = await usersCollection.findOne({ email: req.params.email });
       res.send(user);
     });
