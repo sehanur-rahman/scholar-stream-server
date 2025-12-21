@@ -35,13 +35,23 @@ app.use(
 app.use(express.json());
 
 // ---------------- MongoDB Setup ----------------
-const client = new MongoClient(process.env.MONGO_URI, {
-  serverApi: {
-    version: ServerApiVersion.v1,
-    strict: true,
-    deprecationErrors: true,
-  },
-});
+let client;
+let clientPromise;
+
+if (!global._mongoClientPromise) {
+  client = new MongoClient(process.env.MONGO_URI, {
+    serverApi: {
+      version: ServerApiVersion.v1,
+      strict: true,
+      deprecationErrors: true,
+    },
+  });
+
+  global._mongoClientPromise = client.connect();
+}
+
+clientPromise = global._mongoClientPromise;
+
 
 let usersCollection;
 let scholarshipsCollection;
@@ -80,7 +90,7 @@ const verifyModerator = async (req, res, next) => {
 // ---------------- Main Function ----------------
 async function run() {
   try {
-    await client.connect();
+    const client = await clientPromise;
     const db = client.db("scholar-stream");
 
     usersCollection = db.collection("users");
