@@ -36,11 +36,11 @@ app.use(express.json());
 
 
 // ---------------- MongoDB Setup ----------------
-let client;
-let clientPromise;
 
-if (!global._mongoClientPromise) {
-  client = new MongoClient(process.env.MONGO_URI, {
+
+
+
+  const client = new MongoClient(process.env.MONGO_URI, {
     serverApi: {
       version: ServerApiVersion.v1,
       strict: true,
@@ -48,10 +48,6 @@ if (!global._mongoClientPromise) {
     },
   });
 
-  global._mongoClientPromise = client.connect();
-}
-
-clientPromise = global._mongoClientPromise;
 
 
 let usersCollection;
@@ -91,7 +87,7 @@ const verifyModerator = async (req, res, next) => {
 // ---------------- Main Function ----------------
 async function run() {
   try {
-    const client = await clientPromise;
+
     const db = client.db("scholar-stream");
 
     usersCollection = db.collection("users");
