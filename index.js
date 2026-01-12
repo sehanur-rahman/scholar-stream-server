@@ -40,13 +40,13 @@ app.use(express.json());
 
 
 
-  const client = new MongoClient(process.env.MONGO_URI, {
-    serverApi: {
-      version: ServerApiVersion.v1,
-      strict: true,
-      deprecationErrors: true,
-    },
-  });
+const client = new MongoClient(process.env.MONGO_URI, {
+  serverApi: {
+    version: ServerApiVersion.v1,
+    strict: true,
+    deprecationErrors: true,
+  },
+});
 
 
 
@@ -166,6 +166,28 @@ async function run() {
         console.error(error);
         res.status(500).send({ message: "Failed to delete user" });
       }
+    });
+    
+    // -------- UPDATE USER PROFILE --------
+    app.patch("/users/profile", verifyJWT, async (req, res) => {
+      const email = req.decoded.email;
+      const { name, photoURL } = req.body;
+
+      if (!name || name.trim() === "") {
+        return res.status(400).send({ message: "Name is required" });
+      }
+
+      const result = await usersCollection.updateOne(
+        { email },
+        {
+          $set: {
+            name,
+            photoURL,
+          },
+        }
+      );
+
+      res.send({ success: true, result });
     });
 
 
